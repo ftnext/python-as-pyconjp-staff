@@ -2,6 +2,11 @@ Custom Slack Reminder which will **automatically stop**.
 
 ## Requirements
 
+### Lambda layer
+
+- installed gspread==3.6.0
+- installed [postslack](https://github.com/ftnext/diy-slack-post) package
+
 ### Service account (Sheets API)
 
 need to add editor of the target spreadsheet.
