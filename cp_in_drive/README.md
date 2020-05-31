@@ -9,7 +9,7 @@ Execute at AWS Lambda.
   - `my_client_secrets.json`
   - `saved_credentials.json`
 
-### file replacement
+### file placement
 
 at Lambda console (from browser)
 
