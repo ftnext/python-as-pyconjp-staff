@@ -34,8 +34,9 @@ def lambda_handler(event, context):
     if not is_verified(event["headers"], event["body"]):
         return {"text": "Something went wrong..."}
 
-    target_id = parse.parse_qs(event["body"])["text"][0]
-    response_url = parse.parse_qs(event["body"])["response_url"][0]
+    body_dict = parse.parse_qs(event["body"])
+    target_id = body_dict["text"][0]
+    response_url = body_dict["response_url"][0]
     payload = {"target_id": target_id, "response_url": response_url}
 
     step_function = boto3.client("stepfunctions", region_name=REGION_NAME)
