@@ -3,7 +3,7 @@ FROM amazonlinux:2.0.20200722.0
 RUN yum update -y \
     && yum install -y wget tar gzip make \
     gcc openssl-devel bzip2-devel libffi-devel \
-    zip \
+    git zip \
     && cd /opt \
     && wget https://www.python.org/ftp/python/3.8.5/Python-3.8.5.tgz \
     && tar xzf Python-3.8.5.tgz \
