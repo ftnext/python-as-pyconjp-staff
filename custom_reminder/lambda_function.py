@@ -1,12 +1,20 @@
 from datetime import date, datetime
 import os
 import sys
+import tempfile
 
+import boto3
 from gspread import service_account
 
 # AWS Lambdaでpost_slack Layerからもimportできるように設定
 sys.path.append("/opt/slack_post_layer")
 from postslack import post_slack  # NOQA
+
+
+# 環境変数が設定されていないときはKeyErrorで落とす
+REGION_NAME = os.environ["REGION_NAME"]
+SECRET_NAME = os.environ["SECRET_NAME"]
+SPREAD_ID = os.environ["SPREAD_ID"]
 
 
 def is_bigger_date(first, second):
@@ -19,16 +27,24 @@ def is_bigger_date(first, second):
 
 
 def lambda_handler(event, context):
-    credential_file = "sa_pyconjp_auto_stuff.json"
+    session = boto3.session.Session()
+    client = session.client(
+        service_name="secretsmanager", region_name=REGION_NAME
+    )
+    get_secret_value_response = client.get_secret_value(SecretId=SECRET_NAME)
+    service_account_string = get_secret_value_response["SecretString"]
+
     scopes = [
         "https://www.googleapis.com/auth/spreadsheets",
         "https://www.googleapis.com/auth/drive",
-    ]
-    gc = service_account(credential_file, scopes)  # デフォルトのスコープ
+    ]  # デフォルトのスコープ
+    with tempfile.NamedTemporaryFile() as tempf:
+        tempf.write(service_account_string.encode())
+        tempf.seek(0)
+        gc = service_account(tempf.name, scopes)
 
     # カスタムリマインダー用のシート（サービスアカウントの追加が必要）
-    spread_id = os.environ.get("SPREAD_ID")
-    spreadsheet = gc.open_by_key(spread_id)
+    spreadsheet = gc.open_by_key(SPREAD_ID)
     worksheet = spreadsheet.sheet1
 
     all_rows_list = worksheet.get_all_values()
