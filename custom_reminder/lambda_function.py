@@ -3,7 +3,6 @@ import os
 import sys
 import tempfile
 
-import boto3
 from gspread import service_account
 
 # AWS Lambdaでpost_slack Layerからもimportできるように設定
@@ -12,8 +11,7 @@ from postslack import post_slack  # NOQA
 
 
 # 環境変数が設定されていないときはKeyErrorで落とす
-REGION_NAME = os.environ["REGION_NAME"]
-SECRET_NAME = os.environ["SECRET_NAME"]
+SERVICE_ACCOUNT_CONTENTS = os.environ["SERVICE_ACCOUNT_CONTENTS"]
 SPREAD_ID = os.environ["SPREAD_ID"]
 
 
@@ -27,19 +25,12 @@ def is_bigger_date(first, second):
 
 
 def lambda_handler(event, context):
-    session = boto3.session.Session()
-    client = session.client(
-        service_name="secretsmanager", region_name=REGION_NAME
-    )
-    get_secret_value_response = client.get_secret_value(SecretId=SECRET_NAME)
-    service_account_string = get_secret_value_response["SecretString"]
-
     scopes = [
         "https://www.googleapis.com/auth/spreadsheets",
         "https://www.googleapis.com/auth/drive",
     ]  # デフォルトのスコープ
     with tempfile.NamedTemporaryFile() as tempf:
-        tempf.write(service_account_string.encode())
+        tempf.write(SERVICE_ACCOUNT_CONTENTS.encode())
         tempf.seek(0)
         gc = service_account(tempf.name, scopes)
 
