@@ -1,0 +1,151 @@
+#!/usr/bin/env bash
+
+set -e
+
+SCRIPT_DIR=$(cd $(dirname $0); pwd)
+PROJECT_DIR=$(dirname $(dirname ${SCRIPT_DIR}))
+
+usage() {
+  echo "Usage: $0 -n <lambda_function_name> -r <role_arn> -s <spreadsheet_id> -t <slack_bot_user_token> [-- --profile foo]" 1>&2
+  echo "" 1>&2
+  echo "Deploy AWS Lambda function which can read/write Google spreadsheet and post to Slack." 1>&2
+  echo "" 1>&2
+  echo "-n: Specify name of the Lambda function. Required" 1>&2
+  echo "-r: Specify ARN of role for the Lambda function. Required" 1>&2
+  echo "-s: Specify spreadsheet id to read/write. Required" 1>&2
+  echo "-t: Specify bot user token for the Slack workspace to post. Required" 1>&2
+  echo "-x: Be verbose." 1>&2
+  echo "-h: Show this help message." 1>&2
+  echo "" 1>&2
+  echo "Use -- to pass other parameters (profile, region, ...) to aws-cli." 1>&2
+  exit 1
+}
+
+if [ "$1" = "--help" -o "$1" = "-help" ]; then
+  usage
+fi
+
+while getopts n:r:s:t:xh OPT
+do
+  case $OPT in
+    "n" ) FUNCTION_NAME=$OPTARG
+      ;;
+    "r" ) ROLE_ARN=$OPTARG
+      ;;
+    "s" ) SPREAD_ID=$OPTARG
+      ;;
+    "t" ) SLACK_BOT_USER_TOKEN=$OPTARG
+      ;;
+    "x" ) set -x
+      ;;
+    "h" ) usage
+      ;;
+    *   ) usage
+      ;;
+  esac
+done
+
+shift `expr $OPTIND - 1`
+
+if [ "${FUNCTION_NAME}" = "" -o "${ROLE_ARN}" = "" -o "${SPREAD_ID}" = "" -o "${SLACK_BOT_USER_TOKEN}" = "" ]; then
+  usage
+fi
+
+grep_from_json() {
+  json_string=$1
+  keyword=$2
+  echo ${json_string} | python3 -m json.tool | grep ${keyword}
+}
+
+strip_trailing_comma() {
+  echo $1 | sed -E 's/,$//'
+}
+
+strip_double_quotes() {
+  echo $1 | sed -E 's/^"//' | sed -E 's/"$//'
+}
+
+publish_lambda_layer() {
+  layer_zip=$1
+  layer_package=$2
+  layer_name=$3
+  layer_description=$4
+  # この関数における$@が、このシェルスクリプトに渡す--以降のパラメタと一致するようにする
+  shift 4
+
+  cd ${PROJECT_DIR}/layer_factory
+  rm build/${layer_zip}
+  ./create_layer_zip.sh -p ${layer_package} -l ${layer_zip}
+  cd build/
+  aws lambda publish-layer-version \
+    --layer-name ${layer_name} \
+    --compatible-runtimes python3.8 \
+    --description python38_${layer_description} \
+    --zip-file fileb://${layer_zip} \
+    $@
+}
+
+# set -eだとgrepで見つからないときstatusは0以外が返るが、スクリプトがエラー終了しないように緩める
+set +e
+
+LIST_LAYER_ARNS=$(aws lambda list-layers --query 'Layers[*].LatestMatchingVersion.LayerVersionArn' $@)
+
+POSTSLACK_LAYER_ARN=$(grep_from_json "${LIST_LAYER_ARNS}" postslack)
+if [ "${POSTSLACK_LAYER_ARN}" = "" ]; then
+  echo "postslack layer does not exist yet. Publish postslack layer ..."
+  publish_lambda_layer "python38_diypostslack01_layer.zip" \
+    git+https://github.com/ftnext/diy-slack-post@master#egg=postslack \
+    diy-postslack diypostslack01 $@
+fi
+
+GSPREAD_LAYER_ARN=$(grep_from_json "${LIST_LAYER_ARNS}" gspread)
+if [ "${GSPREAD_LAYER_ARN}" = "" ]; then
+  echo "gspread layer does not exist yet. Publish gspread layer ..."
+  publish_lambda_layer "python38_gspread36_layer.zip " \
+    gspread==3.6.0 gspread36 gspread36 $@
+fi
+
+set -e
+
+LAYER_ARNS=()
+LIST_LAYER_ARNS=$(aws lambda list-layers --query 'Layers[*].LatestMatchingVersion.LayerVersionArn' $@)
+
+POSTSLACK_LAYER_ARN=$(grep_from_json "${LIST_LAYER_ARNS}" postslack)
+POSTSLACK_LAYER_ARN=$(strip_trailing_comma ${POSTSLACK_LAYER_ARN})
+POSTSLACK_LAYER_ARN=$(strip_double_quotes ${POSTSLACK_LAYER_ARN})
+LAYER_ARNS+=(${POSTSLACK_LAYER_ARN})
+
+GSPREAD_LAYER_ARN=$(grep_from_json "${LIST_LAYER_ARNS}" gspread)
+GSPREAD_LAYER_ARN=$(strip_trailing_comma ${GSPREAD_LAYER_ARN})
+GSPREAD_LAYER_ARN=$(strip_double_quotes ${GSPREAD_LAYER_ARN})
+LAYER_ARNS+=(${GSPREAD_LAYER_ARN})
+
+ENVIRONMENT_VARIABLES=()
+ENVIRONMENT_VARIABLES+=("SERVICE_ACCOUNT_CONTENTS=Replace_here_to_oneliner...")
+ENVIRONMENT_VARIABLES+=("SPREAD_ID=${SPREAD_ID}")
+ENVIRONMENT_VARIABLES+=("SLACK_BOT_USER_TOKEN=${SLACK_BOT_USER_TOKEN}")
+
+ENVIRONMENT_VARIABLES_STRING=""
+for env_var in ${ENVIRONMENT_VARIABLES[@]}
+do
+  ENVIRONMENT_VARIABLES_STRING="${env_var},${ENVIRONMENT_VARIABLES_STRING}"
+done
+ENVIRONMENT_VARIABLES_STRING=$(strip_trailing_comma ${ENVIRONMENT_VARIABLES_STRING})
+
+# zipにフルパス分のディレクトリができないようにcdすることにした
+cd ${SCRIPT_DIR}
+
+# zipはアーカイブに追加する挙動なので、アップロードするコードが増えないように前回デプロイしたファイルを消す
+rm function.zip
+zip function.zip lambda_function.py
+
+aws lambda create-function \
+  --function-name ${FUNCTION_NAME} \
+  --runtime python3.8 \
+  --role ${ROLE_ARN} \
+  --handler lambda_function.lambda_handler \
+  --zip-file fileb://function.zip \
+  --timeout 10 \
+  --environment Variables="{${ENVIRONMENT_VARIABLES_STRING}}" \
+  --layers ${LAYER_ARNS[@]} \
+  $@
