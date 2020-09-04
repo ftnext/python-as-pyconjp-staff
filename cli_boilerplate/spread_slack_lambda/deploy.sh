@@ -6,13 +6,14 @@ SCRIPT_DIR=$(cd $(dirname $0); pwd)
 PROJECT_DIR=$(dirname $(dirname ${SCRIPT_DIR}))
 
 usage() {
-  echo "Usage: $0 -n <lambda_function_name> -r <role_arn> -e <env_var_pair> [-e <env_var_pair>] [-- --profile foo]" 1>&2
+  echo "Usage: $0 -n <lambda_function_name> -r <role_arn> -s <spreadsheet_id> -t <slack_bot_user_token> [-- --profile foo]" 1>&2
   echo "" 1>&2
   echo "Deploy AWS Lambda function which can read/write Google spreadsheet and post to Slack." 1>&2
   echo "" 1>&2
   echo "-n: Specify name of the Lambda function. Required" 1>&2
   echo "-r: Specify ARN of role for the Lambda function. Required" 1>&2
-  echo "-e: Specify environment variable as key=value format. Required at least one" 1>&2
+  echo "-s: Specify spreadsheet id to read/write. Required" 1>&2
+  echo "-t: Specify bot user token for the Slack workspace to post. Required" 1>&2
   echo "-x: Be verbose." 1>&2
   echo "-h: Show this help message." 1>&2
   echo "" 1>&2
@@ -24,16 +25,16 @@ if [ "$1" = "--help" -o "$1" = "-help" ]; then
   usage
 fi
 
-ENVIRONMENT_VARIABLES=()
-
-while getopts n:r:e:xh OPT
+while getopts n:r:s:t:xh OPT
 do
   case $OPT in
     "n" ) FUNCTION_NAME=$OPTARG
       ;;
     "r" ) ROLE_ARN=$OPTARG
       ;;
-    "e" ) ENVIRONMENT_VARIABLES+=($OPTARG)
+    "s" ) SPREAD_ID=$OPTARG
+      ;;
+    "t" ) SLACK_BOT_USER_TOKEN=$OPTARG
       ;;
     "x" ) set -x
       ;;
@@ -46,11 +47,7 @@ done
 
 shift `expr $OPTIND - 1`
 
-if [ "${FUNCTION_NAME}" = "" -o "${ROLE_ARN}" = "" ]; then
-  usage
-fi
-
-if [ ${#ENVIRONMENT_VARIABLES[@]} -eq 0 ]; then
+if [ "${FUNCTION_NAME}" = "" -o "${ROLE_ARN}" = "" -o "${SPREAD_ID}" = "" -o "${SLACK_BOT_USER_TOKEN}" = "" ]; then
   usage
 fi
 
@@ -73,8 +70,8 @@ publish_lambda_layer() {
   layer_package=$2
   layer_name=$3
   layer_description=$4
+  # この関数における$@が、このシェルスクリプトに渡す--以降のパラメタと一致するようにする
   shift 4
-  echo $@
 
   cd ${PROJECT_DIR}/layer_factory
   rm build/${layer_zip}
@@ -122,6 +119,11 @@ GSPREAD_LAYER_ARN=$(grep_from_json "${LIST_LAYER_ARNS}" gspread)
 GSPREAD_LAYER_ARN=$(strip_trailing_comma ${GSPREAD_LAYER_ARN})
 GSPREAD_LAYER_ARN=$(strip_double_quotes ${GSPREAD_LAYER_ARN})
 LAYER_ARNS+=(${GSPREAD_LAYER_ARN})
+
+ENVIRONMENT_VARIABLES=()
+ENVIRONMENT_VARIABLES+=("SERVICE_ACCOUNT_CONTENTS=Replace_here_to_oneliner...")
+ENVIRONMENT_VARIABLES+=("SPREAD_ID=${SPREAD_ID}")
+ENVIRONMENT_VARIABLES+=("SLACK_BOT_USER_TOKEN=${SLACK_BOT_USER_TOKEN}")
 
 ENVIRONMENT_VARIABLES_STRING=""
 for env_var in ${ENVIRONMENT_VARIABLES[@]}
