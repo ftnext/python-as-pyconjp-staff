@@ -50,7 +50,7 @@ The parameters specified in the command line is set to the environment variables
 
 ![](./images/added_envvars_by_deploy_script.png)
 
-If you have not needed Lambda layers, the script creates them.
+If you do not have the needed Lambda layers, the script creates them.
 
 ![](./images/deploy_script_creates_layers.png)
 
