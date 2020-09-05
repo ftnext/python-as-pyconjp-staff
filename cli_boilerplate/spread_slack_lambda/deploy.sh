@@ -51,6 +51,8 @@ if [ "${FUNCTION_NAME}" = "" -o "${ROLE_ARN}" = "" -o "${SPREAD_ID}" = "" -o "${
   usage
 fi
 
+export AWS_PAGER=""
+
 grep_from_json() {
   json_string=$1
   keyword=$2
