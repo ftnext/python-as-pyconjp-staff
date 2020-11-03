@@ -12,6 +12,8 @@ JIRAの情報をコマンドラインで取得し、コピー&ペーストでナ
 
 - Python 3系の環境がある (開発はPython 3.8.1)
 - PyCon JPのスタッフのJIRAにアカウントを持っていて、ログインできる
+- JIRAのアカウント（＝Atlassianアカウント）でAPIトークンを作成済みである
+  - APIトークン作成手順：https://confluence.atlassian.com/cloud/api-tokens-938839638.html
 
 ## 使い方
 
@@ -24,6 +26,8 @@ cd python-as-pyconjp-staff/knowledge_base_helper
 # お気に入りのツールで環境を分離してください（venv, poetry, pipenv, etc.）
 
 pip install -r requirements.txt
+
+export JIRA_EMAIL=... JIRA_API_TOKEN=...
 ```
 
 ### コマンド
