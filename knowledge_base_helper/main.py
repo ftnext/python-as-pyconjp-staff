@@ -15,22 +15,39 @@ COMPONENTS_2020 = [
 ]
 
 
-if __name__ == "__main__":
-    parser = ArgumentParser()
-    parser.add_argument("component", choices=COMPONENTS_2020)
-    args = parser.parse_args()
-
+def authorize_client():
     options = {"server": "https://pyconjp.atlassian.net"}
     email, api_token = os.getenv("JIRA_EMAIL"), os.getenv("JIRA_API_TOKEN")
-    jira = JIRA(options, basic_auth=(email, api_token))
+    return JIRA(options, basic_auth=(email, api_token))
 
+
+def fetch_epics_by_component(jira_client, component):
     jql = (
         f"project=NEZ and component in ({args.component}) and issuetype=Epic "
         "order by key asc"
     )
-    epics_under_components = jira.search_issues(jql)
+    return jira_client.search_issues(jql)
 
-    # エピックの一覧を箇条書きのマークアップとして出力する
-    for epic in epics_under_components:
+
+def print_epics_as_bullet_line(epics):
+    for epic in epics:
         print(f"* {epic.fields.summary}")
         print(f"  * ref: {epic.permalink()}")
+
+
+def list_epics(args):
+    jira = authorize_client()
+    epics_under_components = fetch_epics_by_component(jira, args.component)
+    print_epics_as_bullet_line(epics_under_components)
+
+
+if __name__ == "__main__":
+    parser = ArgumentParser()
+    parser.add_argument("component", choices=COMPONENTS_2020)
+    subparsers = parser.add_subparsers(title="mode")
+
+    list_epics_parser = subparsers.add_parser("list_epics")
+    list_epics_parser.set_defaults(func=list_epics)
+
+    args = parser.parse_args()
+    args.func(args)
