@@ -1,4 +1,5 @@
 import os
+import sys
 from argparse import ArgumentParser
 from collections import defaultdict
 from functools import partial
@@ -15,6 +16,10 @@ COMPONENTS_2020 = [
     "6.NOC",
     "7.配信",
 ]
+
+
+def verify_environment_variables():
+    return os.getenv("JIRA_EMAIL") and os.getenv("JIRA_API_TOKEN")
 
 
 def authorize_client():
@@ -73,6 +78,12 @@ def list_epic_subissues(client, args):
 
 
 if __name__ == "__main__":
+    if not verify_environment_variables():
+        sys.exit(
+            "Make sure that the environment variables JIRA_EMAIL and "
+            "JIRA_API_TOKEN are set."
+        )
+
     jira = authorize_client()
     # create function which has argument `args` (Only client is passed here)
     list_epics_func = partial(list_epics, jira)
