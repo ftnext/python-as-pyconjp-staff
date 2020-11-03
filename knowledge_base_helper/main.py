@@ -1,6 +1,7 @@
 import os
 from argparse import ArgumentParser
 from collections import defaultdict
+from functools import partial
 
 from jira import JIRA
 
@@ -49,18 +50,16 @@ def print_epic_subissues_as_bullet_line(epics, epic_to_subissues_map):
             print(f"  * {subissue.fields.summary} ({subissue.key})")
 
 
-def list_epics(args):
-    jira = authorize_client()
-    epics_under_components = fetch_epics_by_component(jira, args.component)
+def list_epics(client, args):
+    epics_under_components = fetch_epics_by_component(client, args.component)
     print_epics_as_bullet_line(epics_under_components)
 
 
-def list_epic_subissues(args):
-    jira = authorize_client()
-    epics_under_components = fetch_epics_by_component(jira, args.component)
+def list_epic_subissues(client, args):
+    epics_under_components = fetch_epics_by_component(client, args.component)
     key_to_epic_map = {epic.key: epic for epic in epics_under_components}
 
-    issues_under_components = fetch_issues_by_component(jira, args.component)
+    issues_under_components = fetch_issues_by_component(client, args.component)
     epic_to_subissues_map = defaultdict(list)
     for issue in issues_under_components:
         parent_key = issue.fields.customfield_10008
@@ -73,15 +72,20 @@ def list_epic_subissues(args):
 
 
 if __name__ == "__main__":
+    jira = authorize_client()
+    # create function which has argument `args` (Only client is passed here)
+    list_epics_func = partial(list_epics, jira)
+    list_epic_subissues_func = partial(list_epic_subissues, jira)
+
     parser = ArgumentParser()
     parser.add_argument("component", choices=COMPONENTS_2020)
     subparsers = parser.add_subparsers(title="mode")
 
     list_epics_parser = subparsers.add_parser("list_epics")
-    list_epics_parser.set_defaults(func=list_epics)
+    list_epics_parser.set_defaults(func=list_epics_func)
 
     list_epic_subissues_parser = subparsers.add_parser("list_epic_subissues")
-    list_epic_subissues_parser.set_defaults(func=list_epic_subissues)
+    list_epic_subissues_parser.set_defaults(func=list_epic_subissues_func)
 
     args = parser.parse_args()
     args.func(args)
