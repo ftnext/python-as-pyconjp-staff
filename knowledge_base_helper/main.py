@@ -62,6 +62,7 @@ def list_epic_subissues(client, args):
     issues_under_components = fetch_issues_by_component(client, args.component)
     epic_to_subissues_map = defaultdict(list)
     for issue in issues_under_components:
+        # customfield_10008 includes a key of the parent issue
         parent_key = issue.fields.customfield_10008
         if parent_key in key_to_epic_map:  # if parent is epic
             epic_to_subissues_map[parent_key].append(issue)
@@ -78,13 +79,22 @@ if __name__ == "__main__":
     list_epic_subissues_func = partial(list_epic_subissues, jira)
 
     parser = ArgumentParser()
-    parser.add_argument("component", choices=COMPONENTS_2020)
-    subparsers = parser.add_subparsers(title="mode")
+    subparsers = parser.add_subparsers(title="mode", help="Choose a mode.")
+    parser.add_argument(
+        "component", choices=COMPONENTS_2020, help="Specify a component."
+    )
 
-    list_epics_parser = subparsers.add_parser("list_epics")
+    list_epics_parser = subparsers.add_parser(
+        "list_epics", help="List epic issues by the specified component."
+    )
     list_epics_parser.set_defaults(func=list_epics_func)
 
-    list_epic_subissues_parser = subparsers.add_parser("list_epic_subissues")
+    list_epic_subissues_parser = subparsers.add_parser(
+        "list_epic_subissues",
+        help=(
+            "List the child issues of epic issues by the specified component."
+        ),
+    )
     list_epic_subissues_parser.set_defaults(func=list_epic_subissues_func)
 
     args = parser.parse_args()
