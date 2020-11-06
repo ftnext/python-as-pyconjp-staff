@@ -2,7 +2,6 @@ import os
 import sys
 from argparse import ArgumentParser
 from collections import defaultdict
-from functools import partial
 
 from jira import JIRA
 
@@ -84,11 +83,6 @@ if __name__ == "__main__":
             "JIRA_API_TOKEN are set."
         )
 
-    jira = authorize_client()
-    # create function which has argument `args` (Only client is passed here)
-    list_epics_func = partial(list_epics, jira)
-    list_epic_subissues_func = partial(list_epic_subissues, jira)
-
     parser = ArgumentParser()
     subparsers = parser.add_subparsers(title="mode", help="Choose a mode.")
     parser.add_argument(
@@ -98,7 +92,7 @@ if __name__ == "__main__":
     list_epics_parser = subparsers.add_parser(
         "list_epics", help="List epic issues by the specified component."
     )
-    list_epics_parser.set_defaults(func=list_epics_func)
+    list_epics_parser.set_defaults(func=list_epics)
 
     list_epic_subissues_parser = subparsers.add_parser(
         "list_epic_subissues",
@@ -106,7 +100,8 @@ if __name__ == "__main__":
             "List the child issues of epic issues by the specified component."
         ),
     )
-    list_epic_subissues_parser.set_defaults(func=list_epic_subissues_func)
+    list_epic_subissues_parser.set_defaults(func=list_epic_subissues)
 
     args = parser.parse_args()
-    args.func(args)
+    jira = authorize_client()
+    args.func(jira, args)
