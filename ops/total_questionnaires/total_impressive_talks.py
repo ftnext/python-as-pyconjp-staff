@@ -1,4 +1,7 @@
-"""Totaling the impressive talks from the participant questionnaires."""
+"""Totaling the impressive talks from the participant questionnaires.
+
+https://pyconjp.blogspot.com/2021/01/pyconjp2020-talk-feedbacks.html
+"""
 
 import argparse
 import csv
