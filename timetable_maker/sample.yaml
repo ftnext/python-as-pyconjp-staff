@@ -1,0 +1,9 @@
+---
+- rooms: [Room A]
+  start: 10:15
+  end: 11:30
+  title: 基調講演（すごい人による）
+- rooms: [Room A, Room B, Room C]
+  start: 9:00
+  end: 10:00
+  title: 素敵なオープニング
