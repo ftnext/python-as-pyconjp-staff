@@ -71,7 +71,13 @@ if __name__ == "__main__":
     if args.output_mode == Mode.SPREADSHEET.value:
         gc = gspread.service_account(filename=args.service_account_file)
         spreadsheet = gc.open_by_key(args.output_sheet_id)
-        worksheet = spreadsheet.add_worksheet(
-            title=args.output_worksheet_name, rows="1", cols="1"
-        )
+
+        worksheet_names = {wks.title for wks in spreadsheet.worksheets()}
+        if args.output_worksheet_name in worksheet_names:
+            worksheet = spreadsheet.worksheet(args.output_worksheet_name)
+            worksheet.clear()
+        else:
+            worksheet = spreadsheet.add_worksheet(
+                title=args.output_worksheet_name, rows="1", cols="1"
+            )
         worksheet.update("A1", timetable)
