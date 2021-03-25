@@ -1,6 +1,8 @@
+import argparse
 import json
 import os
 import random
+import textwrap
 import time
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
@@ -46,6 +48,24 @@ def create_random_passcode(length=7):
 
 
 if __name__ == "__main__":
+    description = """\
+    Schedule Zoom meeting.
+
+    Example: Schedule 2 hours meeting from 2021-03-15 19:30.
+        python %(prog)s 03-15 19:30 2 'Awesome meeting'
+    """
+    parser = argparse.ArgumentParser(
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description=textwrap.dedent(description),
+    )
+    parser.add_argument("date", help="Specify %%m-%%d format. (e.g. 03-09)")
+    parser.add_argument("time", help="Specify %%H:%%M format. (e.g. 20:00)")
+    parser.add_argument("duration", type=int, help="Unit: hour.")
+    parser.add_argument(
+        "topic", help="Enclose by quotes when topic includes white spaces."
+    )
+    args = parser.parse_args()
+
     users_query = {"status": "active", "page_size": 10, "page_number": 1}
     users_endpoint = f"https://api.zoom.us/v2/users?{urlencode(users_query)}"
     users_result = do_request(users_endpoint, "GET")
@@ -73,10 +93,10 @@ if __name__ == "__main__":
         f"https://api.zoom.us/v2/users/{user_id}/meetings"
     )
     meeting_data = {
-        "start_time": "2021-03-15T20:00:00",
+        "start_time": f"2021-{args.date}T{args.time}:00",
         "timezone": "Asia/Tokyo",
-        "duration": 60 * 2,
-        "topic": "PyCon JP 2021 スタッフ全体mtg & 作業会（3月3週）",
+        "duration": 60 * args.duration,
+        "topic": args.topic,
         # ref: https://marketplace.zoom.us/docs/api-reference/zoom-api/meetings/meetingcreate  # NOQA
         "type": 2,  # Scheduled meeting
         "password": passcode,
