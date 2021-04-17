@@ -36,6 +36,35 @@ def do_request(endpoint, method, data=None):
         return json.load(res)
 
 
+def fetch_zoom_user_id():
+    users_query = {"status": "active", "page_size": 10, "page_number": 1}
+    users_endpoint = f"https://api.zoom.us/v2/users?{urlencode(users_query)}"
+    users_result = do_request(users_endpoint, "GET")
+    for user in users_result["users"]:
+        if user["first_name"] == "PyCon":
+            return user["id"]
+
+
+def listup_meetings(args):
+    user_id = fetch_zoom_user_id()
+    meeting_list_query = {
+        "type": "upcoming",
+        "page_size": 10,
+        "page_number": 1,
+    }
+    meeting_list_endpoint = (
+        f"https://api.zoom.us/v2/users/{user_id}/meetings"
+        f"?{urlencode(meeting_list_query)}"
+    )
+    meeting_result = do_request(meeting_list_endpoint, "GET")
+    get_start_time = itemgetter("start_time")
+    for meeting in sorted(meeting_result["meetings"], key=get_start_time):
+        print(meeting["start_time"])  # TODO: UTCで表示される
+        print(meeting["topic"])
+        print(meeting["join_url"])
+        print("-" * 40)
+
+
 def create_random_passcode(length=7):
     charset = ["@", "-", "_", "*"]
     numbers = list("0123456789")
@@ -46,6 +75,38 @@ def create_random_passcode(length=7):
     charset.extend(numbers + lower_alphabet + upper_alphabet)
     random.shuffle(charset)
     return "".join(random.sample(charset, 1)[0] for _ in range(length))
+
+
+def create_meeting(args):
+    user_id = fetch_zoom_user_id()
+    passcode = create_random_passcode()
+    print(f"{passcode=}")
+
+    meeting_creation_endpoint = (
+        f"https://api.zoom.us/v2/users/{user_id}/meetings"
+    )
+    meeting_data = {
+        "start_time": f"2021-{args.date}T{args.time}:00",
+        "timezone": "Asia/Tokyo",
+        "duration": 60 * args.duration,
+        "topic": args.topic,
+        # ref: https://marketplace.zoom.us/docs/api-reference/zoom-api/meetings/meetingcreate  # NOQA
+        "type": 2,  # Scheduled meeting
+        "password": passcode,
+        "settings": {
+            "join_before_host": True,
+            "jbh_time": 0,  # join before the host anytime
+            "waiting_room": False,
+            "host_video": False,
+            "participant_video": False,
+            "mute_upon_entry": False,
+            "auto_recording": "local",
+        },
+    }
+    creation_result = do_request(
+        meeting_creation_endpoint, "POST", json.dumps(meeting_data).encode()
+    )
+    print(creation_result["join_url"])
 
 
 if __name__ == "__main__":
@@ -62,9 +123,10 @@ if __name__ == "__main__":
         formatter_class=argparse.RawDescriptionHelpFormatter,
         description=textwrap.dedent(description),
     )
-    subparsers = parser.add_subparsers(title="subcommand", dest="subcommand")
+    subparsers = parser.add_subparsers(title="subcommand")
 
     list_parser = subparsers.add_parser("list")
+    list_parser.set_defaults(func=listup_meetings)
 
     create_parser = subparsers.add_parser("create")
     create_parser.add_argument(
@@ -77,61 +139,8 @@ if __name__ == "__main__":
     create_parser.add_argument(
         "topic", help="Enclose by quotes when topic includes white spaces."
     )
+    create_parser.set_defaults(func=create_meeting)
+
     args = parser.parse_args()
 
-    users_query = {"status": "active", "page_size": 10, "page_number": 1}
-    users_endpoint = f"https://api.zoom.us/v2/users?{urlencode(users_query)}"
-    users_result = do_request(users_endpoint, "GET")
-    for user in users_result["users"]:
-        if user["first_name"] == "PyCon":
-            user_id = user["id"]
-            break
-
-    if args.subcommand == "list":
-        meeting_list_query = {
-            "type": "upcoming",
-            "page_size": 10,
-            "page_number": 1,
-        }
-        meeting_list_endpoint = (
-            f"https://api.zoom.us/v2/users/{user_id}/meetings"
-            f"?{urlencode(meeting_list_query)}"
-        )
-        meeting_result = do_request(meeting_list_endpoint, "GET")
-        get_start_time = itemgetter("start_time")
-        for meeting in sorted(meeting_result["meetings"], key=get_start_time):
-            print(meeting["start_time"])  # TODO: UTCで表示される
-            print(meeting["topic"])
-            print(meeting["join_url"])
-            print("-" * 40)
-
-    if args.subcommand == "create":
-        passcode = create_random_passcode()
-        print(f"{passcode=}")
-        meeting_creation_endpoint = (
-            f"https://api.zoom.us/v2/users/{user_id}/meetings"
-        )
-        meeting_data = {
-            "start_time": f"2021-{args.date}T{args.time}:00",
-            "timezone": "Asia/Tokyo",
-            "duration": 60 * args.duration,
-            "topic": args.topic,
-            # ref: https://marketplace.zoom.us/docs/api-reference/zoom-api/meetings/meetingcreate  # NOQA
-            "type": 2,  # Scheduled meeting
-            "password": passcode,
-            "settings": {
-                "join_before_host": True,
-                "jbh_time": 0,  # join before the host anytime
-                "waiting_room": False,
-                "host_video": False,
-                "participant_video": False,
-                "mute_upon_entry": False,
-                "auto_recording": "local",
-            },
-        }
-        creation_result = do_request(
-            meeting_creation_endpoint,
-            "POST",
-            json.dumps(meeting_data).encode(),
-        )
-        print(creation_result["join_url"])
+    args.func(args)
