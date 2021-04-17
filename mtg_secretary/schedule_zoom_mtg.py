@@ -4,6 +4,7 @@ import os
 import random
 import textwrap
 import time
+from operator import itemgetter
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
@@ -51,17 +52,29 @@ if __name__ == "__main__":
     description = """\
     Schedule Zoom meeting.
 
-    Example: Schedule 2 hours meeting from 2021-03-15 19:30.
-        python %(prog)s 03-15 19:30 2 'Awesome meeting'
+    Example:
+    - Schedule 2 hours meeting from 2021-03-15 19:30.
+        python %(prog)s create 03-15 19:30 2 'Awesome meeting'
+    - List up scheduled meetings.
+        python %(prog)s list
     """
     parser = argparse.ArgumentParser(
         formatter_class=argparse.RawDescriptionHelpFormatter,
         description=textwrap.dedent(description),
     )
-    parser.add_argument("date", help="Specify %%m-%%d format. (e.g. 03-09)")
-    parser.add_argument("time", help="Specify %%H:%%M format. (e.g. 20:00)")
-    parser.add_argument("duration", type=int, help="Unit: hour.")
-    parser.add_argument(
+    subparsers = parser.add_subparsers(title="subcommand", dest="subcommand")
+
+    list_parser = subparsers.add_parser("list")
+
+    create_parser = subparsers.add_parser("create")
+    create_parser.add_argument(
+        "date", help="Specify %%m-%%d format. (e.g. 03-09)"
+    )
+    create_parser.add_argument(
+        "time", help="Specify %%H:%%M format. (e.g. 20:00)"
+    )
+    create_parser.add_argument("duration", type=int, help="Unit: hour.")
+    create_parser.add_argument(
         "topic", help="Enclose by quotes when topic includes white spaces."
     )
     args = parser.parse_args()
@@ -74,43 +87,51 @@ if __name__ == "__main__":
             user_id = user["id"]
             break
 
-    """
-    meeting_list_query = {
-        "type": "upcoming",
-        "page_size": 10,
-        "page_number": 1,
-    }
-    meeting_list_endpoint = (
-        f"https://api.zoom.us/v2/users/{user_id}/meetings"
-        f"?{urlencode(meeting_list_query)}"
-    )
-    meeting_result = do_request(meeting_list_endpoint, "GET")
-    """
+    if args.subcommand == "list":
+        meeting_list_query = {
+            "type": "upcoming",
+            "page_size": 10,
+            "page_number": 1,
+        }
+        meeting_list_endpoint = (
+            f"https://api.zoom.us/v2/users/{user_id}/meetings"
+            f"?{urlencode(meeting_list_query)}"
+        )
+        meeting_result = do_request(meeting_list_endpoint, "GET")
+        get_start_time = itemgetter("start_time")
+        for meeting in sorted(meeting_result["meetings"], key=get_start_time):
+            print(meeting["start_time"])  # TODO: UTCで表示される
+            print(meeting["topic"])
+            print(meeting["join_url"])
+            print("-" * 40)
 
-    passcode = create_random_passcode()
-    print(f"{passcode=}")
-    meeting_creation_endpoint = (
-        f"https://api.zoom.us/v2/users/{user_id}/meetings"
-    )
-    meeting_data = {
-        "start_time": f"2021-{args.date}T{args.time}:00",
-        "timezone": "Asia/Tokyo",
-        "duration": 60 * args.duration,
-        "topic": args.topic,
-        # ref: https://marketplace.zoom.us/docs/api-reference/zoom-api/meetings/meetingcreate  # NOQA
-        "type": 2,  # Scheduled meeting
-        "password": passcode,
-        "settings": {
-            "join_before_host": True,
-            "jbh_time": 0,  # join before the host anytime
-            "waiting_room": False,
-            "host_video": False,
-            "participant_video": False,
-            "mute_upon_entry": False,
-            "auto_recording": "local",
-        },
-    }
-    creation_result = do_request(
-        meeting_creation_endpoint, "POST", json.dumps(meeting_data).encode()
-    )
-    print(creation_result["join_url"])
+    if args.subcommand == "create":
+        passcode = create_random_passcode()
+        print(f"{passcode=}")
+        meeting_creation_endpoint = (
+            f"https://api.zoom.us/v2/users/{user_id}/meetings"
+        )
+        meeting_data = {
+            "start_time": f"2021-{args.date}T{args.time}:00",
+            "timezone": "Asia/Tokyo",
+            "duration": 60 * args.duration,
+            "topic": args.topic,
+            # ref: https://marketplace.zoom.us/docs/api-reference/zoom-api/meetings/meetingcreate  # NOQA
+            "type": 2,  # Scheduled meeting
+            "password": passcode,
+            "settings": {
+                "join_before_host": True,
+                "jbh_time": 0,  # join before the host anytime
+                "waiting_room": False,
+                "host_video": False,
+                "participant_video": False,
+                "mute_upon_entry": False,
+                "auto_recording": "local",
+            },
+        }
+        creation_result = do_request(
+            meeting_creation_endpoint,
+            "POST",
+            json.dumps(meeting_data).encode(),
+        )
+        print(creation_result["join_url"])
