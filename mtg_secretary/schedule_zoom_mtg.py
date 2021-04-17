@@ -110,25 +110,34 @@ def create_meeting(args):
 
 
 if __name__ == "__main__":
-    description = """\
-    Schedule Zoom meeting.
-
-    Example:
-    - Schedule 2 hours meeting from 2021-03-15 19:30.
-        python %(prog)s create 03-15 19:30 2 'Awesome meeting'
-    - List up scheduled meetings.
-        python %(prog)s list
-    """
-    parser = argparse.ArgumentParser(
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        description=textwrap.dedent(description),
-    )
+    description = "Zoom meeting scheduler."
+    parser = argparse.ArgumentParser(description=description)
     subparsers = parser.add_subparsers(title="subcommand")
 
-    list_parser = subparsers.add_parser("list")
+    list_parser_help = """\
+    List up scheduled meetings.
+
+    Example:
+        python %(prog)s
+    """
+    list_parser = subparsers.add_parser(
+        "list",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description=textwrap.dedent(list_parser_help),
+    )
     list_parser.set_defaults(func=listup_meetings)
 
-    create_parser = subparsers.add_parser("create")
+    create_parser_help = """\
+    Schedule a Zoom meeting.
+
+    Example: Schedule 2 hours meeting from 2021-03-15 19:30.
+        python %(prog)s 03-15 19:30 2 'Awesome meeting'
+    """
+    create_parser = subparsers.add_parser(
+        "create",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description=textwrap.dedent(create_parser_help),
+    )
     create_parser.add_argument(
         "date", help="Specify %%m-%%d format. (e.g. 03-09)"
     )
