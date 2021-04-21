@@ -65,8 +65,8 @@ def list_meetings(user_id: str) -> list[dict[str, str]]:
             "URL: ": meeting["join_url"],
         }
         for meeting in r.get("meetings", {})
-        if now > datetime.strptime(meeting["start_time"], "%Y-%m-%dT%H:%M:00Z")
-    ]  # if now > を反転させると未来が出る
+        if now < datetime.strptime(meeting["start_time"], "%Y-%m-%dT%H:%M:00Z")
+    ]  # if now < を反転させると過去が出る
     return meetings
 
 
