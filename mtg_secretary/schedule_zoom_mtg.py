@@ -1,9 +1,12 @@
+from __future__ import annotations
 import argparse
+from datetime import datetime
 import json
 import os
 import random
 import textwrap
 import time
+from typing import Iterable
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
@@ -45,6 +48,26 @@ def create_random_passcode(length=7):
     charset.extend(numbers + lower_alphabet + upper_alphabet)
     random.shuffle(charset)
     return "".join(random.sample(charset, 1)[0] for _ in range(length))
+
+
+def list_meetings(user_id: str) -> list[dict[str, str]]:
+    """
+    :return: List of all scheduled meetings
+    """
+    now = datetime.now()
+
+    r = do_request(f"https://api.zoom.us/v2/users/{user_id}/meetings", "GET")
+    meetings = [
+        {
+            "Topic: ": meeting["topic"],
+            "Start: ": meeting["start_time"].rstrip("Z").replace("T", ""),
+            "Duration minitues: ": meeting["duration"],
+            "URL: ": meeting["join_url"],
+        }
+        for meeting in r.get("meetings", {})
+        if now > datetime.strptime(meeting["start_time"], "%Y-%m-%dT%H:%M:00Z")
+    ]  # if now > を反転させると未来が出る
+    return meetings
 
 
 if __name__ == "__main__":
