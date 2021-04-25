@@ -70,6 +70,27 @@ class ProgramsTestCase(TestCase):
             ),
         ]
 
+    def assertProgramEqual(self, actual, expected):
+        self.assertEqual(actual, expected)
+        self.assertEqual(actual.end, expected.end)
+        self.assertEqual(actual.title, expected.title)
+        self.assertEqual(actual.rooms, expected.rooms)
+
+    def test_getitem(self):
+        programs = Programs(self.programs_list)
+
+        program1 = programs[0]
+        expected1 = Program(
+            dt.time(10, 30), dt.time(11, 30), "Test2", ["Room3"]
+        )
+        self.assertProgramEqual(program1, expected1)
+
+        program2 = programs[1]
+        expected2 = Program(
+            dt.time(9, 30), dt.time(10, 00), "Test1", ["Room1", "Room2"]
+        )
+        self.assertProgramEqual(program2, expected2)
+
     def test_len(self):
         programs = Programs(self.programs_list)
 
