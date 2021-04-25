@@ -1,6 +1,6 @@
 import datetime as dt
 from unittest import TestCase
-from unittest.mock import patch
+from unittest.mock import call, patch
 
 from timetable.data import Program, Programs
 
@@ -26,6 +26,8 @@ class ProgramTestCase(TestCase):
         self.assertEqual(actual.end, expected.end)
         self.assertEqual(actual.title, expected.title)
         self.assertEqual(actual.rooms, expected.rooms)
+
+        zero_filled_hour.assert_has_calls([call("9:30"), call("10:30")])
 
     def test_lt_between_program_instances(self):
         """start時刻の大小関係を、プログラムどうしの大小関係とする"""
