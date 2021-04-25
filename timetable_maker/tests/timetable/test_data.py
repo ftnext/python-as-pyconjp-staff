@@ -98,6 +98,41 @@ class ProgramsTestCase(TestCase):
 
         self.assertEqual(len(programs), 2)
 
+    @patch("timetable.data.Program.create")
+    def test_create(self, program_create):
+        program_create.side_effect = self.programs_list
+        program_data = [
+            {
+                "start": "10:30",
+                "end": "11:30",
+                "title": "Test2",
+                "rooms": ["Room3"],
+            },
+            {
+                "start": "9:30",
+                "end": "10:00",
+                "title": "Test1",
+                "rooms": ["Room1", "Room2"],
+            },
+        ]
+
+        actual = Programs.create(program_data)
+        # 期待値はProgramのstartの昇順
+        expected = Programs([self.programs_list[1], self.programs_list[0]])
+
+        # dataclassで付与された__eq__を使って検証（型、programs(list)の長さ）
+        self.assertEqual(actual, expected)
+        # Programの__eq__で見ていない部分を検証（検証項目のオーバーヘッドは受け入れる）
+        self.assertProgramEqual(actual[0], expected[0])
+        self.assertProgramEqual(actual[1], expected[1])
+
+        program_create.assert_has_calls(
+            [
+                call("10:30", "11:30", "Test2", ["Room3"]),
+                call("9:30", "10:00", "Test1", ["Room1", "Room2"]),
+            ]
+        )
+
     def test_rooms(self):
         """各Programで使われているroomsから、重複を除いて一覧を返す"""
         self.programs_list[0].rooms.append("Room1")  # Roomの重複を設定
