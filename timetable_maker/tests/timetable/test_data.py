@@ -62,13 +62,15 @@ class ProgramTestCase(TestCase):
 
 
 class ProgramsTestCase(TestCase):
-    def test_len(self):
-        programs_list = [
+    def setUp(self):
+        self.programs_list = [
             Program(dt.time(10, 30), dt.time(11, 30), "Test2", ["Room3"]),
             Program(
                 dt.time(9, 30), dt.time(10, 00), "Test1", ["Room1", "Room2"]
             ),
         ]
-        programs = Programs(programs_list)
+
+    def test_len(self):
+        programs = Programs(self.programs_list)
 
         self.assertEqual(len(programs), 2)
