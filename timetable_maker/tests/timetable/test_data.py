@@ -12,22 +12,6 @@ class ProgramTestCase(TestCase):
 
                 self.assertEqual(actual, expected)
 
-    def test_eq_between_program_instances(self):
-        """start時刻が等しければ、プログラムとして等しいとみなす"""
-        program1 = Program(dt.time(10, 0), dt.time(11, 0), "Test1", ["Room1"])
-        # yamlファイルではstart時刻が等しいプログラムは書かれない想定
-        program2 = Program(
-            dt.time(10, 0), dt.time(10, 30), "Test2", ["Room2", "Room3"]
-        )
-
-        self.assertTrue(program1 == program2)
-
-    def test_eq_with_not_program_instance(self):
-        program = Program(dt.time(10, 0), dt.time(11, 0), "Test1", ["Room1"])
-        a_time = dt.time(10, 0)
-
-        self.assertEqual(program.__eq__(a_time), NotImplemented)
-
     def test_lt_between_program_instances(self):
         """start時刻の大小関係を、プログラムどうしの大小関係とする"""
         program1 = Program(
@@ -44,3 +28,19 @@ class ProgramTestCase(TestCase):
         a_time = dt.time(11, 0)
 
         self.assertEqual(program.__lt__(a_time), NotImplemented)
+
+    def test_eq_between_program_instances(self):
+        """start時刻が等しければ、プログラムとして等しいとみなす"""
+        program1 = Program(dt.time(10, 0), dt.time(11, 0), "Test1", ["Room1"])
+        # yamlファイルではstart時刻が等しいプログラムは書かれない想定
+        program2 = Program(
+            dt.time(10, 0), dt.time(10, 30), "Test2", ["Room2", "Room3"]
+        )
+
+        self.assertTrue(program1 == program2)
+
+    def test_eq_with_not_program_instance(self):
+        program = Program(dt.time(10, 0), dt.time(11, 0), "Test1", ["Room1"])
+        a_time = dt.time(10, 0)
+
+        self.assertEqual(program.__eq__(a_time), NotImplemented)
