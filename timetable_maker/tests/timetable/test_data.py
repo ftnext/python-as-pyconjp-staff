@@ -95,3 +95,10 @@ class ProgramsTestCase(TestCase):
         programs = Programs(self.programs_list)
 
         self.assertEqual(len(programs), 2)
+
+    def test_rooms(self):
+        """各Programで使われているroomsから、重複を除いて一覧を返す"""
+        self.programs_list[0].rooms.append("Room1")  # Roomの重複を設定
+        programs = Programs(self.programs_list)
+
+        self.assertEqual(programs.rooms(), ("Room1", "Room2", "Room3"))
