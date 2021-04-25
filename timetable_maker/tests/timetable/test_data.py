@@ -1,5 +1,6 @@
 import datetime as dt
 from unittest import TestCase
+from unittest.mock import patch
 
 from timetable.data import Program
 
@@ -11,6 +12,20 @@ class ProgramTestCase(TestCase):
                 actual = Program.zero_filled_hour(time_str)
 
                 self.assertEqual(actual, expected)
+
+    @patch(
+        "timetable.data.Program.zero_filled_hour",
+        side_effect=("09:30", "10:30"),
+    )
+    def test_create(self, zero_filled_hour):
+        actual = Program.create("9:30", "10:30", "Test", ["Room2"])
+
+        expected = Program(dt.time(9, 30), dt.time(10, 30), "Test", ["Room2"])
+        self.assertEqual(actual, expected)
+        # __eq__で比較していない属性について検証
+        self.assertEqual(actual.end, expected.end)
+        self.assertEqual(actual.title, expected.title)
+        self.assertEqual(actual.rooms, expected.rooms)
 
     def test_lt_between_program_instances(self):
         """start時刻の大小関係を、プログラムどうしの大小関係とする"""
