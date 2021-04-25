@@ -21,3 +21,12 @@ class ProgramTestCase(TestCase):
         )
 
         self.assertTrue(program1 == program2)
+
+    def test_lt_between_program_instances(self):
+        """start時刻の大小関係を、プログラムどうしの大小関係とする"""
+        program1 = Program(
+            dt.time(9, 30), dt.time(10, 30), "Test1", ["Room1", "Room2"]
+        )
+        program2 = Program(dt.time(11, 0), dt.time(12, 0), "Test2", ["Room3"])
+
+        self.assertTrue(program1 < program2)
