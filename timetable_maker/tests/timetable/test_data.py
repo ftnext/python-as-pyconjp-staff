@@ -2,7 +2,7 @@ import datetime as dt
 from unittest import TestCase
 from unittest.mock import patch
 
-from timetable.data import Program
+from timetable.data import Program, Programs
 
 
 class ProgramTestCase(TestCase):
@@ -59,3 +59,16 @@ class ProgramTestCase(TestCase):
         a_time = dt.time(10, 0)
 
         self.assertEqual(program.__eq__(a_time), NotImplemented)
+
+
+class ProgramsTestCase(TestCase):
+    def test_len(self):
+        programs_list = [
+            Program(dt.time(10, 30), dt.time(11, 30), "Test2", ["Room3"]),
+            Program(
+                dt.time(9, 30), dt.time(10, 00), "Test1", ["Room1", "Room2"]
+            ),
+        ]
+        programs = Programs(programs_list)
+
+        self.assertEqual(len(programs), 2)
