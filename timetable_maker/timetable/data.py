@@ -46,6 +46,8 @@ class Programs(Sequence):
     programs: list[Program]
 
     def __getitem__(self, key):
+        if isinstance(key, slice):
+            return self.__class__(self.programs[key])
         return self.programs[key]
 
     def __len__(self):
