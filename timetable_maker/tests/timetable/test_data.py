@@ -93,6 +93,17 @@ class ProgramsTestCase(TestCase):
         )
         self.assertProgramEqual(program2, expected2)
 
+    def test_getitem_slice(self):
+        programs = Programs(self.programs_list)
+        expected = programs
+
+        actual = programs[:]
+
+        self.assertEqual(actual, expected)
+        # 個々のProgramについて __eq__ で比較していない属性について検証
+        for a, e in zip(actual, expected):
+            self.assertProgramEqual(a, e)
+
     def test_len(self):
         programs = Programs(self.programs_list)
 
