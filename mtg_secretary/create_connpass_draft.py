@@ -11,10 +11,13 @@ def do_login(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--kill_browser", action="store_true")
+    common_options_parser = argparse.ArgumentParser(add_help=False)
+    common_options_parser.add_argument("--kill_browser", action="store_true")
     subparsers = parser.add_subparsers(title="subcommand")
 
-    login_parser = subparsers.add_parser("login")
+    login_parser = subparsers.add_parser(
+        "login", parents=[common_options_parser]
+    )
     login_parser.set_defaults(func=do_login)
 
     args = parser.parse_args()
