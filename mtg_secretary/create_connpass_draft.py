@@ -1,16 +1,4 @@
-from helium import (
-    Alert,
-    S,
-    Text,
-    click,
-    find_all,
-    go_to,
-    kill_browser,
-    press,
-    scroll_down,
-    wait_until,
-    write,
-)
+from helium import S, click, find_all, kill_browser, press, scroll_down, write
 from selenium.webdriver.common.keys import Keys
 
 
@@ -31,15 +19,6 @@ def input_datetime(element, value, table_header):
     # elementをクリックしたときに開いている日付選択ウィジェットを閉じる
     click(table_header)
 
-
-# テンプレートのコピーを作成
-go_to("connpass.com/editmanage")
-copy_events = find_all(S(".copyEvent"))
-first_copy_event = copy_events[0]  # テンプレートは未来の日付のため一番上
-click(first_copy_event)
-Alert().accept()
-
-wait_until(Text("下書き中").exists)
 
 # タイトルの変更
 field_title = find_element_by_id("FieldTitle")
