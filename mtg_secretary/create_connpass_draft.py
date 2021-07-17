@@ -1,12 +1,21 @@
 import argparse
+from pathlib import Path
 
 from helium import kill_browser
 
-from connpass.playbook import login
+from connpass.data import EventInfo
+from connpass.playbook import copy_template_event, draft_event, login
 
 
 def do_login(args):
     login()
+
+
+def do_draft(args):
+    event_info = EventInfo.from_json(args.event_info)
+    login()
+    copy_template_event()
+    draft_event(**event_info.as_dict())
 
 
 if __name__ == "__main__":
@@ -19,6 +28,12 @@ if __name__ == "__main__":
         "login", parents=[common_options_parser]
     )
     login_parser.set_defaults(func=do_login)
+
+    draft_parser = subparsers.add_parser(
+        "draft", parents=[common_options_parser]
+    )
+    draft_parser.add_argument("event_info", type=Path)
+    draft_parser.set_defaults(func=do_draft)
 
     args = parser.parse_args()
 
