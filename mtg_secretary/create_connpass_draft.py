@@ -1,5 +1,3 @@
-import os
-
 from helium import (
     Alert,
     S,
@@ -10,7 +8,6 @@ from helium import (
     kill_browser,
     press,
     scroll_down,
-    start_firefox,
     wait_until,
     write,
 )
@@ -34,12 +31,6 @@ def input_datetime(element, value, table_header):
     # elementをクリックしたときに開いている日付選択ウィジェットを閉じる
     click(table_header)
 
-
-start_firefox("connpass.com/login")
-write(os.getenv("CONNPASS_USERNAME"), into="ユーザー名")
-write(os.getenv("CONNPASS_PASSWORD"), into="パスワード")
-click("ログインする")
-wait_until(Text("イベント管理").exists)
 
 # テンプレートのコピーを作成
 go_to("connpass.com/editmanage")
