@@ -64,7 +64,7 @@ def draft_event(
     input_datetime(end_inputs[1], end_time, "終了日時")
     click("保存")
 
-    scroll_down()  # 「参加者への情報」までスクロール
+    scroll_down(400)  # 「参加者への情報」までスクロール（編集時に保存が見える状態）
     field_participant_only = find_element_by_id("FieldParticipantOnlyInfo")
     input_connpass_form_item(
         field_participant_only, f"\n\n{mtg_url}\n", is_adding_mode=True
