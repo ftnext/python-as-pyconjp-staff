@@ -21,6 +21,7 @@ def do_draft(args):
 if __name__ == "__main__":
     description = "Connpass event drafter by browser automation."
     parser = argparse.ArgumentParser(description=description)
+
     common_options_parser = argparse.ArgumentParser(add_help=False)
     common_options_parser.add_argument(
         "--kill_browser",
@@ -30,6 +31,7 @@ if __name__ == "__main__":
             "(default: not specified, which means keeping the window open)."
         ),
     )
+
     subparsers = parser.add_subparsers(title="subcommand")
 
     login_parser = subparsers.add_parser(
