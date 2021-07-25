@@ -50,8 +50,21 @@ def parse_args():
         "--output_worksheet_name",
         default=f"timetable_{datetime.now():%Y%m%d_%H%M}",
     )
+    to_sheet_parser.add_argument("--overwrite", action="store_true")
 
     return parser.parse_args()
+
+
+def handle_existing_worksheet(spreadsheet, worksheet_name, do_overwrite):
+    """Return worksheet when overwrite, otherwise stash and return None"""
+    worksheet = spreadsheet.worksheet(worksheet_name)
+    if do_overwrite:
+        worksheet.clear()
+        return worksheet
+
+    new_title = f"{worksheet_name}_stash_{datetime.now():%Y%m%d_%H%M%S}"
+    worksheet.update_title(new_title)
+    return None
 
 
 if __name__ == "__main__":
@@ -73,17 +86,13 @@ if __name__ == "__main__":
         spreadsheet = gc.open_by_key(args.output_sheet_id)
 
         worksheet_names = {wks.title for wks in spreadsheet.worksheets()}
+        worksheet = None
         if args.output_worksheet_name in worksheet_names:
-            new_title = (
-                f"{args.output_worksheet_name}_"
-                f"stash_{datetime.now():%Y%m%d_%H%M%S}"
+            worksheet = handle_existing_worksheet(
+                spreadsheet, args.output_worksheet_name, args.overwrite
             )
-            worksheet_to_be_stashed = spreadsheet.worksheet(
-                args.output_worksheet_name
+        if worksheet is None:
+            worksheet = spreadsheet.add_worksheet(
+                title=args.output_worksheet_name, rows="1", cols="1"
             )
-            worksheet_to_be_stashed.update_title(new_title)
-
-        worksheet = spreadsheet.add_worksheet(
-            title=args.output_worksheet_name, rows="1", cols="1"
-        )
         worksheet.update("A1", timetable)
