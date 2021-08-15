@@ -38,6 +38,15 @@ def copy_template_event():
     wait_until(Text("下書き中").exists)
 
 
+def copy_existing_event(event_url: str):
+    """管理者権限を持つイベントをコピーする"""
+    go_to(event_url)
+    click("コピーを作成")
+    Alert().accept()
+
+    wait_until(Text("下書き中").exists)
+
+
 def draft_event(
     title: str,
     start_date: str,
