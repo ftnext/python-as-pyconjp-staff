@@ -36,6 +36,14 @@ class ScheduledMeeting:
         # dedentで取れないインデントと、printで2行空かないよう末尾の改行文字を除く
         return dedent(string_format.rstrip())
 
+    # 並び替えにはdataclassが実装する__eq__と以下の__lt__を使う。
+    # 1つのZoomアカウントで同じ開始時間のZoom mtgを作るのはナンセンスであり、
+    # __eq__を上書きすると、factoryのテストなどの変更が必要になってくる
+    def __lt__(self, other):
+        if not isinstance(other, self.__class__):
+            return NotImplemented
+        return self.datetime < other.datetime
+
 
 @dataclass
 class ScheduledMeetings(Sequence):
@@ -50,4 +58,4 @@ class ScheduledMeetings(Sequence):
         return len(self.meetings)
 
     def sorted(self):
-        raise NotImplementedError
+        return self.__class__(sorted(self.meetings))
