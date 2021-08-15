@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 import datetime as dt
+from collections.abc import Sequence
 from dataclasses import dataclass
 from textwrap import dedent
 
@@ -32,3 +35,16 @@ class ScheduledMeeting:
         """
         # dedentで取れないインデントと、printで2行空かないよう末尾の改行文字を除く
         return dedent(string_format.rstrip())
+
+
+@dataclass
+class ScheduledMeetings(Sequence):
+    meetings: list[ScheduledMeeting]
+
+    def __getitem__(self, key):
+        if isinstance(key, slice):
+            return self.__class__(self.meetings[key])
+        return self.meetings[key]
+
+    def __len__(self):
+        return len(self.meetings)
