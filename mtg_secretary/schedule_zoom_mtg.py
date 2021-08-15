@@ -9,6 +9,8 @@ from urllib.request import Request, urlopen
 
 import jwt
 
+from zoom.data import ScheduledMeetings
+
 ZOOM_JWT_APP_API_KEY = os.environ["ZOOM_JWT_APP_API_KEY"]
 ZOOM_JWT_APP_API_SECRET = os.environ["ZOOM_JWT_APP_API_SECRET"]
 
@@ -35,6 +37,35 @@ def do_request(endpoint, method, data=None):
         return json.load(res)
 
 
+def fetch_zoom_user_id():
+    users_query = {"status": "active", "page_size": 10, "page_number": 1}
+    users_endpoint = f"https://api.zoom.us/v2/users?{urlencode(users_query)}"
+    users_result = do_request(users_endpoint, "GET")
+    for user in users_result["users"]:
+        if user["first_name"] == "PyCon":
+            return user["id"]
+
+
+def listup_meetings(args):
+    user_id = fetch_zoom_user_id()
+    meeting_list_query = {
+        "type": "upcoming",
+        "page_size": 10,
+        "page_number": 1,
+    }
+    meeting_list_endpoint = (
+        f"https://api.zoom.us/v2/users/{user_id}/meetings"
+        f"?{urlencode(meeting_list_query)}"
+    )
+    meeting_result = do_request(meeting_list_endpoint, "GET")
+    scheduled_meetings = ScheduledMeetings.from_json(
+        meeting_result["meetings"]
+    )
+    for meeting in scheduled_meetings.sorted():
+        print(meeting)
+        print("-" * 40)
+
+
 def create_random_passcode(length=7):
     charset = ["@", "-", "_", "*"]
     numbers = list("0123456789")
@@ -47,48 +78,11 @@ def create_random_passcode(length=7):
     return "".join(random.sample(charset, 1)[0] for _ in range(length))
 
 
-if __name__ == "__main__":
-    description = """\
-    Schedule Zoom meeting.
-
-    Example: Schedule 2 hours meeting from 2021-03-15 19:30.
-        python %(prog)s 03-15 19:30 2 'Awesome meeting'
-    """
-    parser = argparse.ArgumentParser(
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        description=textwrap.dedent(description),
-    )
-    parser.add_argument("date", help="Specify %%m-%%d format. (e.g. 03-09)")
-    parser.add_argument("time", help="Specify %%H:%%M format. (e.g. 20:00)")
-    parser.add_argument("duration", type=int, help="Unit: hour.")
-    parser.add_argument(
-        "topic", help="Enclose by quotes when topic includes white spaces."
-    )
-    args = parser.parse_args()
-
-    users_query = {"status": "active", "page_size": 10, "page_number": 1}
-    users_endpoint = f"https://api.zoom.us/v2/users?{urlencode(users_query)}"
-    users_result = do_request(users_endpoint, "GET")
-    for user in users_result["users"]:
-        if user["first_name"] == "PyCon":
-            user_id = user["id"]
-            break
-
-    """
-    meeting_list_query = {
-        "type": "upcoming",
-        "page_size": 10,
-        "page_number": 1,
-    }
-    meeting_list_endpoint = (
-        f"https://api.zoom.us/v2/users/{user_id}/meetings"
-        f"?{urlencode(meeting_list_query)}"
-    )
-    meeting_result = do_request(meeting_list_endpoint, "GET")
-    """
-
+def create_meeting(args):
+    user_id = fetch_zoom_user_id()
     passcode = create_random_passcode()
     print(f"{passcode=}")
+
     meeting_creation_endpoint = (
         f"https://api.zoom.us/v2/users/{user_id}/meetings"
     )
@@ -114,3 +108,49 @@ if __name__ == "__main__":
         meeting_creation_endpoint, "POST", json.dumps(meeting_data).encode()
     )
     print(creation_result["join_url"])
+
+
+if __name__ == "__main__":
+    description = "Zoom meeting scheduler."
+    parser = argparse.ArgumentParser(description=description)
+    subparsers = parser.add_subparsers(title="subcommand")
+
+    list_parser_help = """\
+    List up scheduled meetings.
+
+    Example:
+        python %(prog)s
+    """
+    list_parser = subparsers.add_parser(
+        "list",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description=textwrap.dedent(list_parser_help),
+    )
+    list_parser.set_defaults(func=listup_meetings)
+
+    create_parser_help = """\
+    Schedule a Zoom meeting.
+
+    Example: Schedule 2 hours meeting from 2021-03-15 19:30.
+        python %(prog)s 03-15 19:30 2 'Awesome meeting'
+    """
+    create_parser = subparsers.add_parser(
+        "create",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description=textwrap.dedent(create_parser_help),
+    )
+    create_parser.add_argument(
+        "date", help="Specify %%m-%%d format. (e.g. 03-09)"
+    )
+    create_parser.add_argument(
+        "time", help="Specify %%H:%%M format. (e.g. 20:00)"
+    )
+    create_parser.add_argument("duration", type=int, help="Unit: hour.")
+    create_parser.add_argument(
+        "topic", help="Enclose by quotes when topic includes white spaces."
+    )
+    create_parser.set_defaults(func=create_meeting)
+
+    args = parser.parse_args()
+
+    args.func(args)
