@@ -4,11 +4,12 @@ import os
 import random
 import textwrap
 import time
-from operator import itemgetter
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
 import jwt
+
+from zoom.data import ScheduledMeetings
 
 ZOOM_JWT_APP_API_KEY = os.environ["ZOOM_JWT_APP_API_KEY"]
 ZOOM_JWT_APP_API_SECRET = os.environ["ZOOM_JWT_APP_API_SECRET"]
@@ -57,11 +58,11 @@ def listup_meetings(args):
         f"?{urlencode(meeting_list_query)}"
     )
     meeting_result = do_request(meeting_list_endpoint, "GET")
-    get_start_time = itemgetter("start_time")
-    for meeting in sorted(meeting_result["meetings"], key=get_start_time):
-        print(meeting["start_time"])  # TODO: UTCで表示される
-        print(meeting["topic"])
-        print(meeting["join_url"])
+    scheduled_meetings = ScheduledMeetings.from_json(
+        meeting_result["meetings"]
+    )
+    for meeting in scheduled_meetings.sorted():
+        print(meeting)
         print("-" * 40)
 
 
