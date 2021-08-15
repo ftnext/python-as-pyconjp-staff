@@ -22,3 +22,10 @@ class ScheduledMeeting:
             tzinfo=None
         )
         return cls(jst_naive_dt, topic, url)
+
+    def __str__(self):
+        return f"""\
+{self.datetime}
+{self.topic}
+{self.url}\
+"""
