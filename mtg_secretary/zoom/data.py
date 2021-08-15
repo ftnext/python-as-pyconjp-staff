@@ -12,7 +12,7 @@ ASIA_TOKYO = pytz.timezone("Asia/Tokyo")
 
 @dataclass
 class ScheduledMeeting:
-    datetime: dt.datetime
+    start_datetime: dt.datetime
     topic: str
     url: str
 
@@ -29,7 +29,7 @@ class ScheduledMeeting:
 
     def __str__(self):
         string_format = f"""\
-            {self.datetime}
+            {self.start_datetime}
             {self.topic}
             {self.url}
         """
@@ -42,7 +42,7 @@ class ScheduledMeeting:
     def __lt__(self, other):
         if not isinstance(other, self.__class__):
             return NotImplemented
-        return self.datetime < other.datetime
+        return self.start_datetime < other.start_datetime
 
 
 @dataclass
