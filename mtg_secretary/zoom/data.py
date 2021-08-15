@@ -1,5 +1,6 @@
 import datetime as dt
 from dataclasses import dataclass
+from textwrap import dedent
 
 import pytz
 
@@ -24,8 +25,10 @@ class ScheduledMeeting:
         return cls(jst_naive_dt, topic, url)
 
     def __str__(self):
-        return f"""\
-{self.datetime}
-{self.topic}
-{self.url}\
-"""
+        string_format = f"""\
+            {self.datetime}
+            {self.topic}
+            {self.url}
+        """
+        # dedentで取れないインデントと、printで2行空かないよう末尾の改行文字を除く
+        return dedent(string_format.rstrip())
