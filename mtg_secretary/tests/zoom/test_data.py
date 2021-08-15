@@ -3,7 +3,7 @@ from datetime import datetime
 from unittest import TestCase
 from unittest.mock import patch
 
-from zoom.data import ScheduledMeeting
+from zoom.data import ScheduledMeeting, ScheduledMeetings
 
 
 class ScheduledMeetingTestCase(TestCase):
@@ -36,5 +36,25 @@ https://print.zoom.us/j/0123456789?pwd=password
 
         print(sut)
         actual = mock_stdout.getvalue()
+
+        self.assertEqual(actual, expected)
+
+
+class ScheduledMeetingsTestCase(TestCase):
+    def test_sorted(self):
+        meeting1 = ScheduledMeeting(
+            datetime(2021, 8, 16, 20, 30, 0),
+            "Greater topic",
+            "https://greater.zoom.us/j/0123456789?pwd=password",
+        )
+        meeting2 = ScheduledMeeting(
+            datetime(2021, 8, 12, 21, 0, 0),
+            "Smaller topic",
+            "https://smaller.zoom.us/j/0123456789?pwd=password",
+        )
+        expected = ScheduledMeetings([meeting2, meeting1])
+
+        sut = ScheduledMeetings([meeting1, meeting2])
+        actual = sut.sorted()
 
         self.assertEqual(actual, expected)

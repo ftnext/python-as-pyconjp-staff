@@ -48,3 +48,6 @@ class ScheduledMeetings(Sequence):
 
     def __len__(self):
         return len(self.meetings)
+
+    def sorted(self):
+        raise NotImplementedError
