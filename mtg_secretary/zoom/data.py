@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import datetime as dt
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from textwrap import dedent
 
@@ -59,3 +59,7 @@ class ScheduledMeetings(Sequence):
 
     def sorted(self) -> "ScheduledMeetings":
         return self.__class__(sorted(self.meetings))
+
+    @classmethod
+    def from_json(cls, data: Sequence[Mapping]) -> "ScheduledMeetings":
+        raise NotImplementedError

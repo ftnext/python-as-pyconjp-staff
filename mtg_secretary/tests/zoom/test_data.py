@@ -58,3 +58,26 @@ class ScheduledMeetingsTestCase(TestCase):
         actual = sut.sorted()
 
         self.assertEqual(actual, expected)
+
+    def test_from_json(self):
+        data = [
+            {
+                "start_time": "2021-04-19T12:00:00Z",
+                "topic": "Meeting topic",
+                "join_url": "https://test.zoom.us/j/0123456789?pwd=password",
+                "other_key": "foobar",
+            },
+        ]
+        expected = ScheduledMeetings(
+            [
+                ScheduledMeeting(
+                    datetime(2021, 4, 19, 21, 0, 0),
+                    "Meeting topic",
+                    "https://test.zoom.us/j/0123456789?pwd=password",
+                )
+            ]
+        )
+
+        actual = ScheduledMeetings.from_json(data)
+
+        self.assertEqual(actual, expected)
