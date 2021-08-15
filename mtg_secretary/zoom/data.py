@@ -27,7 +27,7 @@ class ScheduledMeeting:
         )
         return cls(jst_naive_dt, topic, url)
 
-    def __str__(self):
+    def __str__(self) -> str:
         string_format = f"""\
             {self.start_datetime}
             {self.topic}
@@ -49,13 +49,13 @@ class ScheduledMeeting:
 class ScheduledMeetings(Sequence):
     meetings: list[ScheduledMeeting]
 
-    def __getitem__(self, key):
+    def __getitem__(self, key) -> "ScheduledMeetings" | "ScheduledMeeting":
         if isinstance(key, slice):
             return self.__class__(self.meetings[key])
         return self.meetings[key]
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.meetings)
 
-    def sorted(self):
+    def sorted(self) -> "ScheduledMeetings":
         return self.__class__(sorted(self.meetings))
