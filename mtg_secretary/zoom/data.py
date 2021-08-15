@@ -61,5 +61,14 @@ class ScheduledMeetings(Sequence):
         return self.__class__(sorted(self.meetings))
 
     @classmethod
-    def from_json(cls, data: Sequence[Mapping]) -> "ScheduledMeetings":
-        raise NotImplementedError
+    def from_json(
+        cls, data: Sequence[Mapping[str, str]]
+    ) -> "ScheduledMeetings":
+        return cls(
+            [
+                ScheduledMeeting.create(
+                    d["start_time"], d["topic"], d["join_url"]
+                )
+                for d in data
+            ]
+        )
