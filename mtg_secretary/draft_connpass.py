@@ -4,7 +4,12 @@ from pathlib import Path
 from helium import kill_browser
 
 from connpass.data import EventInfo
-from connpass.playbook import copy_template_event, draft_event, login
+from connpass.playbook import (
+    copy_existing_event,
+    copy_template_event,
+    draft_event,
+    login,
+)
 
 
 def do_login(args):
@@ -14,7 +19,10 @@ def do_login(args):
 def do_draft(args):
     event_info = EventInfo.from_json(args.event_info)
     login()
-    copy_template_event()
+    if args.from_url:
+        copy_existing_event(args.from_url)
+    else:
+        copy_template_event()
     draft_event(**event_info.as_dict())
 
 
@@ -52,6 +60,14 @@ if __name__ == "__main__":
         help=(
             "Specify JSON file with represents event information "
             "(See example)."
+        ),
+    )
+    draft_parser.add_argument(
+        "--from_url",
+        "-u",
+        help=(
+            "Specify existing connpass event URL "
+            "in case of not copying template event."
         ),
     )
     draft_parser.set_defaults(func=do_draft)
