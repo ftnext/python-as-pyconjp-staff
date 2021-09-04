@@ -29,10 +29,11 @@ if __name__ == "__main__":
     with urlopen(groups_users_list_req) as res:
         response = json.loads(res.read())
     user_ids = response["users"]
+    print(f"{len(user_ids)} members in {group['handle']}")
 
     user_info_url = "https://slack.com/api/users.info"
     users = []
-    for user_id in response["users"]:
+    for user_id in user_ids:
         user_info_args = {"user": user_id}
         user_info_req = Request(
             f"{user_info_url}?{urlencode(user_info_args)}",
