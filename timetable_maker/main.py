@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 import csv
-from argparse import ArgumentParser
+import textwrap
+from argparse import ArgumentParser, RawDescriptionHelpFormatter
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
@@ -33,17 +34,46 @@ class Mode(Enum):
 
 
 def parse_args():
-    parser = ArgumentParser()
+    description = "Create timetable from yaml file."
+    parser = ArgumentParser(description=description)
     parser.add_argument("timetable_yaml", type=Path)
     parser.add_argument("--step_min", type=int, default=15)
     parser.add_argument("--marker", default="◯")
 
     subparsers = parser.add_subparsers(dest="output_mode")
 
-    to_csv_parser = subparsers.add_parser(Mode.CSV_FILE.value)
+    to_csv_parser_help = """\
+    Dump timetable to CSV file.
+
+    Example: Create timetable as CSV with a star as marker
+        and 1 line for every 10 minutes
+
+        python %(prog)s --step_min 10 --marker ☆ sample.yml to_csv <CSV path>
+    """
+    to_csv_parser = subparsers.add_parser(
+        Mode.CSV_FILE.value,
+        formatter_class=RawDescriptionHelpFormatter,
+        help=textwrap.dedent(to_csv_parser_help),
+    )
     to_csv_parser.add_argument("output_csv", type=Path)
 
-    to_sheet_parser = subparsers.add_parser(Mode.SPREADSHEET.value)
+    to_sheet_parser_help = """\
+    Dump timetable to Google spreadsheet.
+
+    Example: Create timetable as spreadsheet with a circle as marker
+        and 1 line for every 5 minutes
+
+        python %(prog)s sample.yml --step_min 5 \\
+            to_sheet <spreadsheet ID> <service account JSON path> \\
+            --output_worksheet_name awesome_timetable
+
+    If you want overwrite the worksheet, specify `--overwrite`.
+    """
+    to_sheet_parser = subparsers.add_parser(
+        Mode.SPREADSHEET.value,
+        formatter_class=RawDescriptionHelpFormatter,
+        help=textwrap.dedent(to_sheet_parser_help),
+    )
     to_sheet_parser.add_argument("output_sheet_id")
     to_sheet_parser.add_argument("service_account_file")
     to_sheet_parser.add_argument(
