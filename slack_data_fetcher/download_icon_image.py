@@ -30,6 +30,9 @@ if __name__ == "__main__":
             response = json.loads(res.read())
         user_info = response["user"]
         image_url = user_info["profile"]["image_512"]
+        if not image_url:
+            # 2014年以前に設定されたアイコンには512サイズがないらしい
+            image_url = user_info["profile"]["image_192"]
 
         user_name = (
             user_info["profile"]["display_name"] or user_info["real_name"]
