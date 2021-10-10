@@ -1,9 +1,12 @@
 import argparse
 import json
+import logging
 import os
 from pathlib import Path
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
+
+logging.basicConfig(level=logging.INFO)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -19,7 +22,8 @@ if __name__ == "__main__":
         "Content-Type": "application/x-www-form-urlencoded",
     }
     user_info_url = "https://slack.com/api/users.info"
-    for user_id in args.slack_user_id:
+    users_count = len(args.slack_user_id)
+    for i, user_id in enumerate(args.slack_user_id, start=1):
         user_info_args = {"user": user_id}
         user_info_req = Request(
             f"{user_info_url}?{urlencode(user_info_args)}",
@@ -41,3 +45,5 @@ if __name__ == "__main__":
             args.output_root / f"{user_name}.jpg", "wb"
         ) as fb:
             fb.write(res.read())
+
+        logging.info("(%d/%d) %s: %s done", i, users_count, user_id, user_name)
