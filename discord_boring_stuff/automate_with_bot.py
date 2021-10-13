@@ -25,6 +25,19 @@ def fetch_talk_channels_information(guild, csv_to_save):
         writer.writerows([headers] + data)
 
 
+async def edit_topic(guild, channel_id: int, topic: str):
+    channel = guild.get_channel(channel_id)
+    await channel.edit(topic=topic)
+
+
+async def edit_channels_topic(guild, csv_path):
+    with open(csv_path, encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            message = f"Zoom: {row['zoom']}"
+            await edit_topic(guild, int(row["channel_id"]), message)
+
+
 @bot.event
 async def on_ready():
     print("ready!")
@@ -34,7 +47,8 @@ async def on_ready():
     if args.subcommand == "fetch_talk_channels":
         fetch_talk_channels_information(guild, args.csv_to_save)
 
-    breakpoint()
+    if args.subcommand == "edit_channels_topic":
+        await edit_channels_topic(guild, args.input_csv)
 
 
 parser = argparse.ArgumentParser()
@@ -42,6 +56,9 @@ subparsers = parser.add_subparsers(dest="subcommand")
 
 fetch_talk_channels_parser = subparsers.add_parser("fetch_talk_channels")
 fetch_talk_channels_parser.add_argument("csv_to_save")
+
+edit_channels_topic_parser = subparsers.add_parser("edit_channels_topic")
+edit_channels_topic_parser.add_argument("input_csv")
 
 args = parser.parse_args()
 
