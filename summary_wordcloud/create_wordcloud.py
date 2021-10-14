@@ -1,6 +1,7 @@
 # https://gist.github.com/ftnext/2e14fb57c96ca276ee4d28eccfcecd96
 
 import argparse
+import unicodedata
 
 from janome.analyzer import Analyzer
 from janome.tokenfilter import (
@@ -32,6 +33,8 @@ if __name__ == "__main__":
 
     with open(args.input_text, encoding="utf-8") as f:
         text = f.read()
+        text = unicodedata.normalize("NFKC", text)  # 全角 -> 半角
+        text = text.lower()
         tokens = a.analyze(text)
 
     wordcloud = WordCloud(
