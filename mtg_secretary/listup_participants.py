@@ -56,13 +56,17 @@ def parse_participation_page(html):
     soup = BeautifulSoup(html, "html.parser")
     body = soup.body
     participants_table_divs = body.find_all("div", "participation_table_area")
-    attendees = []
     for div in participants_table_divs:
         attendee_type = find_attendee_type(div.table.thead)
         names = list(iterate_display_name(div.table.tbody))
-        attendee_subset = AttendeeSubset(attendee_type, names)
-        attendees.append(attendee_subset)
-    return attendees
+        yield attendee_type, names
+
+
+def create_attendee_subsets(html):
+    return [
+        AttendeeSubset(type_, names)
+        for type_, names in parse_participation_page(html)
+    ]
 
 
 def display(attendee_subset):
@@ -82,7 +86,7 @@ if __name__ == "__main__":
     with urlopen(url) as res:
         raw_html = res.read()
 
-    attendees = parse_participation_page(raw_html)
+    attendees = create_attendee_subsets(raw_html)
 
     for attendee_subset in attendees:
         display(attendee_subset)
