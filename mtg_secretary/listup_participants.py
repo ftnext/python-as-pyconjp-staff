@@ -1,7 +1,16 @@
+from __future__ import annotations
+
 import argparse
+from dataclasses import dataclass
 from urllib.request import urlopen
 
 from bs4 import BeautifulSoup
+
+
+@dataclass
+class Attendees:
+    type: str
+    names: list[str]
 
 
 def tidy_participation_url(url: str) -> str:
@@ -38,15 +47,13 @@ def parse_participation_page(html):
     soup = BeautifulSoup(html, "html.parser")
     body = soup.body
     participants_table_divs = body.find_all("div", "participation_table_area")
+    attendees_list = []
     for div in participants_table_divs:
         attendee_type = find_attendee_type(div.table.thead)
-        print(attendee_type)
-        print("-" * len(attendee_type) * 2)
-
-        for name in iterate_display_name(div.table.tbody):
-            print(name)
-
-        print()
+        names = list(iterate_display_name(div.table.tbody))
+        attendees = Attendees(attendee_type, names)
+        attendees_list.append(attendees)
+    return attendees_list
 
 
 if __name__ == "__main__":
@@ -58,4 +65,11 @@ if __name__ == "__main__":
     with urlopen(url) as res:
         raw_html = res.read()
 
-    parse_participation_page(raw_html)
+    attendees_list = parse_participation_page(raw_html)
+
+    for attendees in attendees_list:
+        print(f"{attendees.type} ({len(attendees.names)})")
+        print("-" * len(attendees.type) * 2)
+        for name in attendees.names:
+            print(name)
+        print()
