@@ -12,6 +12,15 @@ class AttendeeSubset:
     type: str
     names: list[str]
 
+    def __len__(self):
+        return len(self.names)
+
+    def __str__(self):
+        return f"{self.type} ({len(self)})"
+
+    def iter_names(self):
+        yield from self.names
+
 
 def tidy_participation_url(url: str) -> str:
     """
@@ -56,6 +65,14 @@ def parse_participation_page(html):
     return attendees
 
 
+def display(attendee_subset):
+    print(attendee_subset)
+    print("-" * len(attendee_subset.type) * 2)
+    for name in attendee_subset.iter_names():
+        print(name)
+    print()
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("connpass_url")
@@ -68,8 +85,4 @@ if __name__ == "__main__":
     attendees = parse_participation_page(raw_html)
 
     for attendee_subset in attendees:
-        print(f"{attendee_subset.type} ({len(attendee_subset.names)})")
-        print("-" * len(attendee_subset.type) * 2)
-        for name in attendee_subset.names:
-            print(name)
-        print()
+        display(attendee_subset)
