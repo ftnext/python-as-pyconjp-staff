@@ -8,7 +8,7 @@ from bs4 import BeautifulSoup
 
 
 @dataclass
-class Attendees:
+class AttendeeSubset:
     type: str
     names: list[str]
 
@@ -47,13 +47,13 @@ def parse_participation_page(html):
     soup = BeautifulSoup(html, "html.parser")
     body = soup.body
     participants_table_divs = body.find_all("div", "participation_table_area")
-    attendees_list = []
+    attendees = []
     for div in participants_table_divs:
         attendee_type = find_attendee_type(div.table.thead)
         names = list(iterate_display_name(div.table.tbody))
-        attendees = Attendees(attendee_type, names)
-        attendees_list.append(attendees)
-    return attendees_list
+        attendee_subset = AttendeeSubset(attendee_type, names)
+        attendees.append(attendee_subset)
+    return attendees
 
 
 if __name__ == "__main__":
@@ -65,11 +65,11 @@ if __name__ == "__main__":
     with urlopen(url) as res:
         raw_html = res.read()
 
-    attendees_list = parse_participation_page(raw_html)
+    attendees = parse_participation_page(raw_html)
 
-    for attendees in attendees_list:
-        print(f"{attendees.type} ({len(attendees.names)})")
-        print("-" * len(attendees.type) * 2)
-        for name in attendees.names:
+    for attendee_subset in attendees:
+        print(f"{attendee_subset.type} ({len(attendee_subset.names)})")
+        print("-" * len(attendee_subset.type) * 2)
+        for name in attendee_subset.names:
             print(name)
         print()
