@@ -1,9 +1,9 @@
 import argparse
 import json
 import os
-import random
 import textwrap
 import time
+from secrets import token_urlsafe
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
@@ -66,16 +66,9 @@ def listup_meetings(args):
         print("-" * 40)
 
 
-def create_random_passcode(length=7):
-    charset = ["@", "-", "_", "*"]
-    numbers = list("0123456789")
-    lower_start = ord("a")
-    lower_alphabet = [chr(lower_start + i) for i in range(26)]
-    upper_start = ord("A")
-    upper_alphabet = [chr(upper_start + i) for i in range(26)]
-    charset.extend(numbers + lower_alphabet + upper_alphabet)
-    random.shuffle(charset)
-    return "".join(random.sample(charset, 1)[0] for _ in range(length))
+def create_random_passcode(nbytes=6):
+    # 各バイトは約1.3文字なので、nbytes=6のとき、8文字のパスコードが返る
+    return token_urlsafe(nbytes)
 
 
 def create_meeting(args):
