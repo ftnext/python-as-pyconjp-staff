@@ -3,6 +3,7 @@ import json
 import os
 import textwrap
 import time
+from datetime import date
 from secrets import token_urlsafe
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
@@ -13,6 +14,7 @@ from zoom.data import ScheduledMeetings
 
 ZOOM_JWT_APP_API_KEY = os.environ["ZOOM_JWT_APP_API_KEY"]
 ZOOM_JWT_APP_API_SECRET = os.environ["ZOOM_JWT_APP_API_SECRET"]
+YEAR = date.today().year
 
 
 def issue_jwt_token():
@@ -80,7 +82,7 @@ def create_meeting(args):
         f"https://api.zoom.us/v2/users/{user_id}/meetings"
     )
     meeting_data = {
-        "start_time": f"2021-{args.date}T{args.time}:00",
+        "start_time": f"{YEAR}-{args.date}T{args.time}:00",
         "timezone": "Asia/Tokyo",
         "duration": 60 * args.duration,
         "topic": args.topic,
@@ -121,10 +123,10 @@ if __name__ == "__main__":
     )
     list_parser.set_defaults(func=listup_meetings)
 
-    create_parser_help = """\
+    create_parser_help = f"""\
     Schedule a Zoom meeting.
 
-    Example: Schedule 2 hours meeting from 2021-03-15 19:30.
+    Example: Schedule 2 hours meeting from {YEAR}-03-15 19:30.
         python %(prog)s 03-15 19:30 2 'Awesome meeting'
     """
     create_parser = subparsers.add_parser(
