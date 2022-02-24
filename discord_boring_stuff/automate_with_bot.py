@@ -1,5 +1,6 @@
 import argparse
 import csv
+from itertools import chain
 from os import getenv
 
 from discord.ext import commands
@@ -38,6 +39,18 @@ async def edit_channels_topic(guild, csv_path):
             await edit_topic(guild, int(row["channel_id"]), message)
 
 
+async def sync_channel_permissions_with_category(guild):
+    for category_channel in guild.categories:
+        for channel in chain(
+            category_channel.text_channels, category_channel.voice_channels
+        ):
+            # カテゴリに属すチャンネルで、権限がカテゴリと同期していなければ同期する
+            if channel.category and not channel.permissions_synced:
+                print(channel.category.name, channel.name)
+                # TODO: 必須ではないが、Missing Access (discord.errors.Forbidden) 対応
+                await channel.edit(sync_permissions=True)
+
+
 @bot.event
 async def on_ready():
     print("ready!")
@@ -50,6 +63,12 @@ async def on_ready():
     if args.subcommand == "edit_channels_topic":
         await edit_channels_topic(guild, args.input_csv)
 
+    if args.subcommand == "archive":
+        if args.archive_command == "sync_channel_permissions":
+            await sync_channel_permissions_with_category(guild)
+
+    print("Command completed!")
+
 
 parser = argparse.ArgumentParser()
 subparsers = parser.add_subparsers(dest="subcommand")
@@ -59,6 +78,12 @@ fetch_talk_channels_parser.add_argument("csv_to_save")
 
 edit_channels_topic_parser = subparsers.add_parser("edit_channels_topic")
 edit_channels_topic_parser.add_argument("input_csv")
+
+archive_parser = subparsers.add_parser("archive")
+archive_subparsers = archive_parser.add_subparsers(dest="archive_command")
+sync_channel_permissions_parser = archive_subparsers.add_parser(
+    "sync_channel_permissions"
+)
 
 args = parser.parse_args()
 
