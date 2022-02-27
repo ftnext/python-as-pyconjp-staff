@@ -3,6 +3,7 @@ import csv
 from itertools import chain
 from os import getenv
 
+from discord import PermissionOverwrite, Permissions
 from discord.ext import commands
 
 bot = commands.Bot(command_prefix="/")
@@ -51,6 +52,28 @@ async def sync_channel_permissions_with_category(guild):
                 await channel.edit(sync_permissions=True)
 
 
+def create_read_only_overwrite():
+    allow_permissions = Permissions(
+        read_messages=True, read_message_history=True
+    )
+    deny_permissions = Permissions.all()
+    deny_permissions.read_messages = False
+    deny_permissions.read_message_history = False
+    overwrite = PermissionOverwrite.from_pair(
+        allow_permissions, deny_permissions
+    )
+    return overwrite
+
+
+async def set_categories_read_only(guild, role_name):
+    # カテゴリの@everyoneの権限の対応で済むことが分かり、実装中のこの関数は使わなくなった
+    # TODO: @everyoneの権限の編集の自動化の余地あり（BotのOAuthがいるかも）
+    role = [role for role in guild.roles if role.name == role_name][0]
+    read_only = create_read_only_overwrite()
+    for category_channel in guild.categories[:2]:
+        await category_channel.set_permissions(role, overwrite=read_only)
+
+
 @bot.event
 async def on_ready():
     print("ready!")
@@ -66,6 +89,8 @@ async def on_ready():
     if args.subcommand == "archive":
         if args.archive_command == "sync_channel_permissions":
             await sync_channel_permissions_with_category(guild)
+        if args.archive_command == "set_read_only":
+            await set_categories_read_only(guild, args.role_name)
 
     print("Command completed!")
 
@@ -84,6 +109,8 @@ archive_subparsers = archive_parser.add_subparsers(dest="archive_command")
 sync_channel_permissions_parser = archive_subparsers.add_parser(
     "sync_channel_permissions"
 )
+set_read_only_parser = archive_subparsers.add_parser("set_read_only")
+set_read_only_parser.add_argument("role_name")
 
 args = parser.parse_args()
 
