@@ -1,10 +1,16 @@
 import json
-import shutil
+import os
 from urllib.request import Request, urlopen
 
+import boto3
 from operate_drive import create_diy_gdrive
 from operate_drive.drive import DiyGoogleDrive
 from operate_drive.file import DiyGDriveFile
+
+
+REGION_NAME = os.environ["REGION_NAME"]
+CLIENT_CONFIG_SECRET = os.environ["CLIENT_CONFIG_SECRET_NAME"]
+SAVED_CREDENTIALS_SECRET = os.environ["SAVED_CREDENTIALS_SECRET_NAME"]
 
 
 def cp_in_drive(source_id: str) -> DiyGDriveFile:
@@ -25,16 +31,34 @@ def title_of_copy_dest(source_title: str) -> str:
     return f"copied_{source_title}"
 
 
+def fetch_secret_string(client, secret_id):
+    secret_value_response = client.get_secret_value(SecretId=secret_id)
+    return secret_value_response["SecretString"]
+
+
 def lambda_handler(event, context):
     target_id = event["target_id"]
     response_url = event["response_url"]
 
-    # credentialをrefreshするため、書き込めるディレクトリ/tmp以下にコピーを作成
-    saved_secret_file = "saved_credentials.json"
-    saved_secret_tmp_path = "/tmp/" + saved_secret_file
-    shutil.copy2(saved_secret_file, saved_secret_tmp_path)
+    session = boto3.session.Session()
+    client = session.client(
+        service_name="secretsmanager", region_name=REGION_NAME
+    )
+    client_config_string = fetch_secret_string(client, CLIENT_CONFIG_SECRET)
+    saved_credentials_string = fetch_secret_string(
+        client, SAVED_CREDENTIALS_SECRET
+    )
+    # Lambda関数から書き込めるディレクトリ/tmp以下にファイルを作成（credentialのrefreshも発生する）
+    with open("/tmp/my_client_secrets.json", "w") as clientf, open(
+        "/tmp/saved_credentials.json", "w"
+    ) as credf:
+        clientf.write(client_config_string)
+        clientf.seek(0)
+        credf.write(saved_credentials_string)
+        credf.seek(0)
 
-    copied_file = cp_in_drive(target_id)
+        copied_file = cp_in_drive(target_id)
+
     access_url = copied_file.fetch_url()
 
     message = {"text": f"Copied!\n{access_url}"}
